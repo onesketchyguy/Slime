@@ -15,13 +15,9 @@ namespace Slime
         /// </summary>
         Vector2 endPos;
 
-        public Rigidbody2D rigidbody;
+        public delegate void Swiped(Vector3 start, Vector3 end);
 
-        private void OnGUI()
-        {
-            GUILayout.Label(startPos.ToString());
-            GUILayout.Label(endPos.ToString());
-        }
+        public Swiped OnSwipe;
 
         private void Update()
         {
@@ -44,10 +40,14 @@ namespace Slime
                     endPos = Input.GetTouch(0).position;
                 }
 
-                // Toss the slime
-                var force = endPos - startPos;
-
-                rigidbody.AddForce(force);
+                // If distance is less than two than this is just a tap.
+                if (Vector2.Distance(endPos, startPos) > 2)
+                {
+                    if (OnSwipe != null)
+                    {
+                        OnSwipe.Invoke(startPos, endPos);
+                    }
+                }
             }
         }
     }
