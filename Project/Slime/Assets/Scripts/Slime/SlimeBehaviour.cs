@@ -10,7 +10,7 @@ namespace Slime
         private SwipeMovement movement;
         private SlimeManager manager;
 
-        bool grounded;
+        private bool grounded;
 
         public GameObject slime;
 
@@ -32,7 +32,7 @@ namespace Slime
             manager.SetSelected(this);
         }
 
-        void OnSwipe(Vector3 start, Vector3 end)
+        private void OnSwipe(Vector3 start, Vector3 end)
         {
             if (isActiveSlime == false || grounded == false) return;
             isActiveSlime = false;
@@ -41,26 +41,30 @@ namespace Slime
             var force = end - start;
 
             // Calculate the new scale of this slime.
-            var scale = transform.localScale.magnitude / 3;
+            var scale = transform.localScale.z;
 
-            var difference = GetDifference(start, end);
-            difference = Mathf.Clamp(difference, manager.minScale, scale);
+            var tossed = GetDifference(start, end);
+            tossed = Mathf.Clamp(tossed, manager.minScale, scale);
 
-            transform.localScale = Vector3.one * (scale - difference);
+            transform.localScale = Vector3.one * (scale - tossed);
 
             // Generate the spawn position
-            var spawnPos = transform.position + force;
-            spawnPos.x = Mathf.Clamp(spawnPos.x, transform.position.x - scale, transform.position.x + scale);
-            spawnPos.y = Mathf.Clamp(spawnPos.y, transform.position.y - scale, transform.position.y + scale);
+            var spawnPos = transform.position + (force * tossed);
+            spawnPos.x = Mathf.Clamp(spawnPos.x, transform.position.x - scale / 2, transform.position.x + scale / 2);
+            spawnPos.y = Mathf.Clamp(spawnPos.y, transform.position.y - scale / 2, transform.position.y + scale / 2);
 
             var go = Instantiate(slime, spawnPos, Quaternion.identity);
-            go.transform.localScale = Vector3.one * difference;
+            go.transform.localScale = Vector3.one * tossed;
             go.GetComponent<Rigidbody2D>().AddForce(force);
+
+            go.name = slime.name;
+
+            manager.CleanUp();
         }
 
-        float GetDifference(Vector3 start, Vector3 end)
+        private float GetDifference(Vector3 start, Vector3 end)
         {
-            var screenScale = Utility.Utilities.ScreenMax / 2;
+            var screenScale = new Vector2(Screen.width, Screen.height);
             var x = 0f;
             var y = 0f;
 
@@ -75,10 +79,12 @@ namespace Slime
             else
                 y = end.y - start.y;
 
-            x = (screenScale.x - x) / screenScale.x;
-            y = (screenScale.y - y) / screenScale.y;
+            x = 1 - ((screenScale.x - x) / screenScale.x);
+            y = 1 - ((screenScale.y - y) / screenScale.y);
 
-            return (1 - x) + (1 - y);
+            var val = ((x + y) / 2);
+
+            return val;
         }
 
         private void OnCollisionEnter2D(Collision2D collision)
@@ -92,8 +98,8 @@ namespace Slime
             {
                 if (isActiveSlime)
                 {
-                    var theirScale = other.transform.localScale.magnitude / 3;
-                    var myScale = transform.localScale.magnitude / 3;
+                    var theirScale = other.transform.localScale.z;
+                    var myScale = transform.localScale.z;
 
                     transform.localScale = Vector3.one * (theirScale + myScale);
 
