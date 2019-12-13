@@ -43,8 +43,18 @@ namespace Slime
             // Calculate the new scale of this slime.
             var scale = transform.localScale.z;
 
-            var tossed = GetDifference(start, end);
-            tossed = Mathf.Clamp(tossed, manager.minScale, scale);
+            var tossed = 1f;
+
+            if (Vector3.Distance(transform.position, start) < 2f)
+            {
+                var pos = Camera.main.WorldToScreenPoint(transform.position);
+
+                tossed = Mathf.Clamp(GetDifference(start, end, pos.x, pos.y), manager.minScale, scale + 0.03f);
+            }
+            else
+            {
+                tossed = Mathf.Clamp(GetDifference(start, end), manager.minScale, scale + 0.03f);
+            }
 
             transform.localScale = Vector3.one * (scale - tossed);
 
@@ -62,9 +72,13 @@ namespace Slime
             manager.CleanUp();
         }
 
-        private float GetDifference(Vector3 start, Vector3 end)
+        private float GetDifference(Vector3 start, Vector3 end, float zeroX = 0, float zeroY = 0)
         {
             var screenScale = new Vector2(Screen.width, Screen.height);
+
+            screenScale.x -= zeroX;
+            screenScale.y -= zeroY;
+
             var x = 0f;
             var y = 0f;
 
